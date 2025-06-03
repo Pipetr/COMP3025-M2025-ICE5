@@ -1,6 +1,7 @@
 package ca.georgiancollege.ice5
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -32,6 +33,11 @@ class MainActivity : AppCompatActivity()
         initializeButtonLists(binding)
         configureNumberInput()
         configureModifierButtons()
+
+        var person = Person("Felipe", 100f)
+        Log.i("onCreate", person.toString())
+
+        person.sayHello()
     }
 
     /**
