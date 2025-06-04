@@ -195,19 +195,36 @@ class Calculator(private var binding: ActivityMainBinding) {
     fun configureOperatorButtons() {
         operatorButtons.forEach { button ->
             button.setOnClickListener {
-                val operator = button.text.toString()
-                binding.resultEditText.append(operator)
-                splitResultText() // Split the current result text into operands and operators
-
-                if (currentOperands.isNotEmpty()) {
-                    try {
-                        val result = calculate(operator, currentOperands)
-                        binding.resultEditText.setText(result.toString())
-                    } catch (e: Exception) {
-                        binding.resultEditText.setText("Error")
+                // if equals button is clicked, perform the calculation if there are operands and operators
+                // are set
+                if (button == binding.equalsButton) {
+                    if (currentOperands.isNotEmpty() && currentOperators.isNotEmpty()) {
+                        try {
+                            val result = calculate(currentOperators[0], currentOperands)
+                            binding.resultEditText.setText(result.toString())
+                            // Reset the operands and operators after calculation
+                            currentOperands = emptyList()
+                            currentOperators = emptyList()
+                        } catch (e: Exception) {
+                            binding.resultEditText.setText("Error")
+                        }
+                    } else {
+                        // If no operands or operators are set, do nothing
+                        return@setOnClickListener
                     }
                 } else {
-                    binding.resultEditText.setText("0")
+                    // If an operator button is clicked, split the current text into operands and operators
+                    // but only if the last character is a digit or the text is empty
+                    // if the last character is an operator, do nothing until a number is entered
+                    val currentText = binding.resultEditText.text.toString()
+                    if (currentText.isEmpty() || currentText == "0" || currentText.last()
+                            .isDigit()
+                    ) {
+                        splitResultText() // Split the current text into operands and operators
+                    } else {
+                        // If the last character is not a digit, do nothing
+                        return@setOnClickListener
+                    }
                 }
             }
         }
