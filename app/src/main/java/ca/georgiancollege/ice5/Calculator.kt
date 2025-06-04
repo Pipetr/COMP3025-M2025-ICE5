@@ -10,12 +10,13 @@ class Calculator(private var binding: ActivityMainBinding) {
     private lateinit var operatorButtons: List<Button>
     private lateinit var modifierButtons: List<Button>
     // Operational properties
-    private var currentOperand: String = ""
-    private var currentOperator: String = ""
+    private var currentOperands: List<Float> = emptyList()
+    private var currentOperators: List<String> = emptyList()
     init {
         initializeButtonLists()
         configureNumberInput()
         configureModifierButtons()
+        configureOperatorButtons()
     }
 
     /**
@@ -164,5 +165,52 @@ class Calculator(private var binding: ActivityMainBinding) {
         throw IllegalArgumentException("Invalid operation: $operation")
     }
 
+    /**
+     * Sets the current operator for the calculator.
+     * Sets the Operands
+     * This method is used to set the operator when a button is clicked.
+     */
+    private fun splitResultText(){
+        val currentText = binding.resultEditText.text.toString()
+        if ((currentText.isNotEmpty() || currentText != "0") && currentText.length > 1) {
+            // If the current text is a valid number, set it as the current operand
+            // use regex to split the current text into numbers and operators
+            val regex = Regex("([+\\-*/%])")
+            val parts = currentText.split(regex).filter { it.isNotBlank() }
+
+            // group the numbers into a list of floats
+            currentOperands = parts.filter { it.toFloatOrNull() != null }.map { it.toFloat() }
+            // group the operators into a list of strings
+            currentOperators = parts.filter { it.toFloatOrNull() == null && it.isNotBlank() }
+        } else {
+            // If the current text is empty, do nothing
+            return
+        }
+    }
+
+    /**
+     * Adds an event listener to the operator buttons to handle calculations.
+     * This method is used to set the operator when a button is clicked.
+     */
+    fun configureOperatorButtons() {
+        operatorButtons.forEach { button ->
+            button.setOnClickListener {
+                val operator = button.text.toString()
+                binding.resultEditText.append(operator)
+                splitResultText() // Split the current result text into operands and operators
+
+                if (currentOperands.isNotEmpty()) {
+                    try {
+                        val result = calculate(operator, currentOperands)
+                        binding.resultEditText.setText(result.toString())
+                    } catch (e: Exception) {
+                        binding.resultEditText.setText("Error")
+                    }
+                } else {
+                    binding.resultEditText.setText("0")
+                }
+            }
+        }
+    }
 
 }

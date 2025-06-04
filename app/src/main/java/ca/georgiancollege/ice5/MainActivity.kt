@@ -27,5 +27,6 @@ class MainActivity : AppCompatActivity()
         val calculator = Calculator(binding)
         calculator.configureNumberInput()
         calculator.configureModifierButtons()
+        calculator.configureOperatorButtons()
     }
 }
