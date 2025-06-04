@@ -9,7 +9,9 @@ class Calculator(private var binding: ActivityMainBinding) {
     private lateinit var numberButtons: List<Button>
     private lateinit var operatorButtons: List<Button>
     private lateinit var modifierButtons: List<Button>
-
+    // Operational properties
+    private var currentOperand: String = ""
+    private var currentOperator: String = ""
     init {
         initializeButtonLists()
         configureNumberInput()
@@ -126,4 +128,41 @@ class Calculator(private var binding: ActivityMainBinding) {
             }
         }
     }
+
+    /**
+     * Performs the calculation based on the current operator and operands.
+     */
+    private fun calculate(operation: String, values: List<Float>): Float{
+        when(operation){
+            "+" -> return (values.sum())
+            "-" -> {
+                var result = values[0]
+                for (value in values.drop(1)) {
+                    result -= value
+                }
+                return result
+            }
+            "*" -> {
+                var result = 1f
+                for (value in values) {
+                    result *= value
+                }
+                return result
+            }
+            "/" -> {
+                var result = values[0]
+                for (value in values.drop(1)) {
+                    if (value != 0f) {
+                        result /= value
+                    } else {
+                        throw ArithmeticException("Division by zero")
+                    }
+                }
+                return result
+            }
+        }
+        throw IllegalArgumentException("Invalid operation: $operation")
+    }
+
+
 }
