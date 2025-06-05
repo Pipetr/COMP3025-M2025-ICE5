@@ -1,5 +1,6 @@
 package ca.georgiancollege.ice5
 
+import android.util.Log
 import android.widget.Button
 import ca.georgiancollege.ice5.databinding.ActivityMainBinding
 
@@ -43,7 +44,8 @@ class Calculator(private var binding: ActivityMainBinding) {
 
         modifierButtons = listOf(
             binding.plusMinusButton,
-            binding.clearButton, binding.deleteButton
+            binding.clearButton, binding.deleteButton,
+            binding.equalsButton
         )
     }
 
@@ -73,6 +75,8 @@ class Calculator(private var binding: ActivityMainBinding) {
                 {
                     binding.resultEditText.append(input)
                 }
+                // After updating the result, split the text into operands and operators
+                splitResultText()
             }
         }
     }
@@ -84,7 +88,11 @@ class Calculator(private var binding: ActivityMainBinding) {
             button.setOnClickListener {
                 when (button)
                 {
-                    binding.clearButton -> binding.resultEditText.setText("0")
+                    binding.clearButton -> {
+                        binding.resultEditText.setText("0")
+                        currentOperands = emptyList()
+                        currentOperators = emptyList()
+                    }
                     binding.deleteButton ->
                     {
                         val currentText = binding.resultEditText.text.toString()
@@ -124,6 +132,11 @@ class Calculator(private var binding: ActivityMainBinding) {
                                 binding.resultEditText.setText(prefixedCurrentText)
                             }
                         }
+                    }
+                    binding.equalsButton ->
+                    {
+                        // Call the equals button click handler
+                        equalsButtonClicked()
                     }
                 }
             }
@@ -172,16 +185,22 @@ class Calculator(private var binding: ActivityMainBinding) {
      */
     private fun splitResultText(){
         val currentText = binding.resultEditText.text.toString()
+        Log.i("splitResultText", "Current text: $currentText")
         if ((currentText.isNotEmpty() || currentText != "0") && currentText.length > 1) {
             // If the current text is a valid number, set it as the current operand
             // use regex to split the current text into numbers and operators
             val regex = Regex("([+\\-*/%])")
-            val parts = currentText.split(regex).filter { it.isNotBlank() }
-
+            val numbers = currentText.split(regex).filter { it.isNotBlank() }
+            val operators = currentText.split(Regex("[0-9.]+")).filter { it.isNotBlank() }
+            Log.i("Oper", "parts before filter: $numbers")
+            Log.i("Oper", "operators: $operators")
             // group the numbers into a list of floats
-            currentOperands = parts.filter { it.toFloatOrNull() != null }.map { it.toFloat() }
+            currentOperands = numbers.filter { it.toFloatOrNull() != null }.map { it.toFloat() }
+            Log.i("Oper", "parts: $numbers")
             // group the operators into a list of strings
-            currentOperators = parts.filter { it.toFloatOrNull() == null && it.isNotBlank() }
+            currentOperators = operators
+            Log.i("Calculator", "Current operands: $currentOperands")
+            Log.i("Calculator", "Current operators: $currentOperators")
         } else {
             // If the current text is empty, do nothing
             return
@@ -195,38 +214,64 @@ class Calculator(private var binding: ActivityMainBinding) {
     fun configureOperatorButtons() {
         operatorButtons.forEach { button ->
             button.setOnClickListener {
-                // if equals button is clicked, perform the calculation if there are operands and operators
-                // are set
-                if (button == binding.equalsButton) {
-                    if (currentOperands.isNotEmpty() && currentOperators.isNotEmpty()) {
-                        try {
-                            val result = calculate(currentOperators[0], currentOperands)
-                            binding.resultEditText.setText(result.toString())
-                            // Reset the operands and operators after calculation
-                            currentOperands = emptyList()
-                            currentOperators = emptyList()
-                        } catch (e: Exception) {
-                            binding.resultEditText.setText("Error")
+                // If an operator button is clicked, split the current text into operands and operators
+                // but only if the last character is a digit or the text is empty
+                // if the last character is an operator, do nothing until a number is entered
+                var currentText = binding.resultEditText.text.toString()
+                if (currentText.isEmpty() || currentText == "0" || currentText.last()
+                        .isDigit()
+                ) {
+                    when(button){
+                        binding.plusButton -> {
+                            // add the operator to the currentOperators list
+                            currentOperators = currentOperators + "+"
+                            currentText = "$currentText+"
                         }
-                    } else {
-                        // If no operands or operators are set, do nothing
-                        return@setOnClickListener
+                        binding.minusButton -> {
+                            currentOperators = currentOperators + "-"
+                            currentText = "$currentText-"
+                        }
+                        binding.multiplyButton -> {
+                            currentOperators = currentOperators + "*"
+                            currentText = "$currentText*"
+                        }
+                        binding.divideButton -> {
+                            currentOperators = currentOperators + "/"
+                            currentText = "$currentText/"
+                        }
                     }
+                    Log.i("Calculator", "Current text: $currentText")
+                    binding.resultEditText.setText(currentText)
+                    splitResultText() // Split the current text into operands and operators
                 } else {
-                    // If an operator button is clicked, split the current text into operands and operators
-                    // but only if the last character is a digit or the text is empty
-                    // if the last character is an operator, do nothing until a number is entered
-                    val currentText = binding.resultEditText.text.toString()
-                    if (currentText.isEmpty() || currentText == "0" || currentText.last()
-                            .isDigit()
-                    ) {
-                        splitResultText() // Split the current text into operands and operators
-                    } else {
-                        // If the last character is not a digit, do nothing
-                        return@setOnClickListener
-                    }
+                    // If the last character is not a digit, do nothing
+                    return@setOnClickListener
                 }
+
             }
+        }
+    }
+
+    /**
+     * Equals button click handler.
+     * Performs the calculation based on the current operator and operands.
+     * If the calculation is successful, it updates the result EditText.
+     */
+    private fun equalsButtonClicked() {
+
+        if (currentOperands.isNotEmpty() && currentOperators.isNotEmpty()) {
+            try {
+                val result = calculate(currentOperators[0], currentOperands)
+                binding.resultEditText.setText(result.toString())
+                // Reset the operands and operators after calculation
+                currentOperands = emptyList()
+                currentOperators = emptyList()
+            } catch (e: Exception) {
+                binding.resultEditText.setText("Error")
+            }
+        } else {
+            // If no operands or operators are set, do nothing
+            return
         }
     }
 
